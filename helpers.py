@@ -27,36 +27,3 @@ def admin_required(f):
 def is_admin():
     user = db.execute("SELECT role FROM users WHERE id = ?", session.get("user_id"))
     return user and user[0]["role"] == "admin"
-
-
-def get_questions(type, num_questions=20, seed_value="user_123456"):
-    rowids = db.execute("SELECT id, level, type FROM questions WHERE type = ?", type)
-    if not rowids:
-        return []
-
-    question_ids = []
-    if type == "Placement":
-        n = num_questions / 6 
-        for level in levels:
-            random_ids = sorted([row['id'] for row in rowids if row['type'] == 'Placement' and row['level'] == level], key=lambda x: hash(f"{seed_value}_{x}") % 1000)
-            selected_ids = random_ids[:int(n)]
-            print(selected_ids)
-            question_ids.extend(selected_ids)
-    else:
-        question_ids = [row['id'] for row in rowids]
-
-    num_questions = min(num_questions, len(question_ids))
-
-    random_ids = sorted(question_ids, key=lambda x: hash(f"{seed_value}_{x}") % 1000)
-
-    selected_ids = random_ids[:num_questions]
-
-    query = """
-        SELECT id, question, option0, option1, option2, option3, answer
-        FROM questions
-        WHERE id IN ({})
-    """.format(','.join('?' * len(selected_ids)))
-
-    questions = db.execute(query, *selected_ids)
-
-    return questions
