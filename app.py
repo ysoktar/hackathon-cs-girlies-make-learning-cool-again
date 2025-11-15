@@ -1,9 +1,10 @@
-from cs50 import SQL
+import os
+from werkzeug.utils import secure_filename
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import login_required, admin_required, is_admin
+from helpers import login_required, allowed_file, ai, db, UPLOAD_FOLDER
 
 max_question_number = 30
 
@@ -11,19 +12,48 @@ app = Flask(__name__)
 
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+# configure upload folder
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# ensure upload folder exists (helpers already creates it, but keep safe)
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
 Session(app)
 
-db = SQL("sqlite:///users.db")
 
-@app.route("/admin")
-@admin_required
-def admin():
-    return render_template("admin.html")
+@app.route("/upload", methods=["GET", "POST"])
+@login_required
+def upload():
+    if request.method == "POST":
+        # check file part
+        if 'file' not in request.files:
+            flash("No file part", "danger")
+            return redirect(request.url)
+
+        file = request.files['file']
+
+        if file.filename == '':
+            flash("No selected file", "danger")
+            return redirect(request.url)
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            dest = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(dest)
+            flash("File uploaded successfully", "success")
+            response = ai(file)
+            return redirect("/upload")
+        else:
+            flash("File type not allowed", "danger")
+            return redirect(request.url)
+    else:
+        return render_template("request.html")
 
 
 @app.route("/")
 def index():
-    return render_template("index.html", is_admin=is_admin())
+    return render_template("index.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -83,8 +113,7 @@ def register():
             return redirect("/register")
 
         hash = generate_password_hash(request.form.get("password"))
-        user = db.execute('INSERT INTO users (username, hash, role) VALUES(?, ?, "user")',
-                          request.form.get("username"), hash)
+        user = db.execute('INSERT INTO users (username, hash) VALUES(?, ?)', request.form.get("username"), hash)
 
         user = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
         session["user_id"] = user[0]["id"]
