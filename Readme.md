@@ -1,3 +1,3 @@
-başlangıç için bunu koydum bunu geliştirebiliriz belki başka fikir bulamazsak
+başlangıç için bunu koydum bunu, başka fikir bulabiliriz
 
 ya da bunu bir şekilde eğlenci hale de getirebiliriz
