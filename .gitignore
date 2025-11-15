@@ -129,3 +129,4 @@ public/.cache/
 # package-lock.json
 # pnpm-lock.yaml
 /flask_session
+*.db
