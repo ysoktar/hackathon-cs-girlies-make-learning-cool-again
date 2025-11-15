@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+
+{% block title %}My Classes - Syllabus Bender{% endblock %}
+
+{% block main %}
+<h1>My Classes</h1>
+<p>Your uploaded syllabuses</p>
+
+{% if syllabuses %}
+<div class="row">
+    <div class="col-md-2 ms-md-3">
+        <div id="syllabus-list" class="list-group list-group-flush classes-sidebar" role="tablist">
+            {% for syllabus in syllabuses %}
+            <a href="#" class="list-group-item list-group-item-action syllabus-item"
+                data-filename="{{ syllabus.filename }}" data-original="{{ syllabus.original_name }}"
+                data-uploaded="{{ syllabus.upload_time.strftime('%Y-%m-%d %H:%M:%S') }}" data-index="{{ loop.index0 }}">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                {{ syllabus.original_name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div id="syllabus-detail">
+            <!-- Selected syllabus content will appear here -->
+        </div>
+        <div id="syllabus-history" class="mt-3">
+            <!-- Optional history/details list -->
+        </div>
+    </div>
+
+</div>
+
+{% else %}
+<div class="alert alert-info" role="alert">
+    <i class="bi bi-info-circle"></i>
+    No syllabuses uploaded yet. <a href="/upload">Upload your first syllabus</a>!
+</div>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const items = document.querySelectorAll('.syllabus-item');
+        const detail = document.getElementById('syllabus-detail');
+
+        function renderDetail(el) {
+            const filename = el.dataset.filename;
+            const original = el.dataset.original;
+            const uploaded = el.dataset.uploaded;
+            detail.innerHTML = `
+            <div class="card mb-3">
+                <div class="card-body text-center">
+                    <h4 class="card-title">${original}</h4>
+                    <p class="text-muted small"><i class="bi bi-calendar-event"></i> Uploaded: ${uploaded}</p>
+                    <p class="text-muted small"><i class="bi bi-file-earmark"></i> File: ${filename}</p>
+                    <a href="/result" class="btn btn-primary mt-2">View Summary</a>
+                </div>
+            </div>
+        `;
+        }
+
+        if (items.length > 0) {
+            items.forEach((el) => {
+                el.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    items.forEach(i => i.classList.remove('active'));
+                    el.classList.add('active');
+                    renderDetail(el);
+                });
+            });
+
+            // Activate first item by default
+            items[0].classList.add('active');
+            renderDetail(items[0]);
+        }
+    });
+</script>
+
+{% endblock %}

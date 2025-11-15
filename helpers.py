@@ -14,18 +14,67 @@ if not os.path.exists(UPLOAD_FOLDER):
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt'}
 # --------------------------------------
 
-api_key=os.getenv("GENAI_API_KEY")
-try:
-    # Initialize the Gemini Client
-    # It will automatically look for the GEMINI_API_KEY environment variable.
-    client = genai.Client(api_key=api_key)
-    print("Gemini client initialized successfully.")
-except Exception as e:
-    print(f"Error initializing GenAI client. Ensure the SDK is installed and GEMINI_API_KEY is set. Error: {e}")
-    client = None
+_client = None
+
+def get_genai_client():
+    """Lazily initialize and return a genai.Client instance.
+
+    Returns None if no API key is set so imports don't fail.
+    """
+    global _client
+    if _client is not None:
+        return _client
+
+    api_key = os.getenv("GENAI_API_KEY")
+    if not api_key:
+        # No API key configured; return None so the app can still run.
+        return None
+
+    try:
+        _client = genai.Client(api_key=api_key)
+        return _client
+    except Exception:
+        # If client creation fails, don't raise at import time; return None.
+        _client = None
+        return None
 
 
 db = SQL("sqlite:///users.db")
+
+# Dictionary to track syllabuses uploaded by each user
+# Structure: { user_id: [{ 'filename': str, 'original_name': str, 'upload_time': datetime }, ...] }
+syllabuses = {}
+
+def add_syllabus(user_id, filename, original_name, upload_time):
+    """
+    Record a newly uploaded syllabus for a user.
+    
+    Args:
+        user_id (int): The ID of the user who uploaded the syllabus
+        filename (str): The saved filename (with user prefix)
+        original_name (str): The original filename provided by the user
+        upload_time (datetime): Timestamp of the upload
+    """
+    if user_id not in syllabuses:
+        syllabuses[user_id] = []
+    
+    syllabus_entry = {
+        'filename': filename,
+        'original_name': original_name,
+        'upload_time': upload_time
+    }
+    syllabuses[user_id].append(syllabus_entry)
+
+def get_user_syllabuses(user_id):
+    """
+    Retrieve all syllabuses uploaded by a user.
+    
+    Args:
+        user_id (int): The ID of the user
+    Returns:
+        list: List of syllabus entries for the user, or empty list if none exist
+    """
+    return syllabuses.get(user_id, [])
 
 def login_required(f):
     @wraps(f)
@@ -44,14 +93,18 @@ def allowed_file(filename):
 
 def ai(filepath):
     # Function to interact with GenAI API - upload file first
+    client = get_genai_client()
+    if not client:
+        return "API client not initialized. Cannot proceed."
+
     uploaded_file = client.files.upload(file=filepath)
-    
+
     # Generate content using the uploaded file
     response = client.models.generate_content(
         model="gemini-2.0-flash",
         contents=["Give me a summary of this file.", uploaded_file]
     )
-    
+
     return response
 
 def ai_summarize_file(filepath):
@@ -66,6 +119,7 @@ def ai_summarize_file(filepath):
     Returns:
         str: The generated text summary, or an error message.
     """
+    client = get_genai_client()
     if not client:
         return "API client not initialized. Cannot proceed."
 
@@ -86,9 +140,10 @@ def ai_summarize_file(filepath):
         
         summary = response.text
         print("[4/4] Summary received.")
+        os.remove(filepath)  # Optionally remove the local file after processing
         return summary
 
-    except APIError as e:
+    except Exception as e:
         return f"An API Error occurred during generation: {e}"
     except FileNotFoundError:
         return f"Error: File not found at path: {filepath}"
@@ -96,7 +151,11 @@ def ai_summarize_file(filepath):
         return f"An unexpected error occurred: {e}"
     finally:
         # 3. Clean up the uploaded file resource
-        if uploaded_file:
-            print(f"\n[CLEANUP] Deleting uploaded file: {uploaded_file.name}")
-            client.files.delete(name=uploaded_file.name)
-            print("[CLEANUP] File deleted.")
+        if uploaded_file and client:
+            try:
+                print(f"\n[CLEANUP] Deleting uploaded file: {uploaded_file.name}")
+                client.files.delete(name=uploaded_file.name)
+                print("[CLEANUP] File deleted.")
+            except Exception:
+                # ignore cleanup errors
+                pass

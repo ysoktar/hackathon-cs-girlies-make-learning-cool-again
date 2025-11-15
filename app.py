@@ -1,10 +1,11 @@
 import os
+from datetime import datetime
 from werkzeug.utils import secure_filename
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import login_required, allowed_file, ai_summarize_file, db, UPLOAD_FOLDER
+from helpers import login_required, allowed_file, ai_summarize_file, db, UPLOAD_FOLDER, add_syllabus, get_user_syllabuses
 
 max_question_number = 30
 
@@ -63,6 +64,15 @@ def upload():
             filename = f"{session.get('username')}_{filename}"
             dest = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(dest)
+            
+            # Record the uploaded syllabus in the dictionary
+            add_syllabus(
+                user_id=session.get('user_id'),
+                filename=filename,
+                original_name=file.filename,
+                upload_time=datetime.now()
+            )
+            
             flash("File uploaded successfully", "success")
             return redirect("/result")
         else:
@@ -71,6 +81,14 @@ def upload():
     else:
         return render_template("request.html")
 
+
+@app.route("/classes")
+@login_required
+def classes():
+    """Display the user's uploaded syllabuses dashboard"""
+    user_id = session.get('user_id')
+    user_syllabuses = get_user_syllabuses(user_id)
+    return render_template("classes.html", syllabuses=user_syllabuses)
 
 @app.route("/")
 def index():
