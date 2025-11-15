@@ -13,10 +13,7 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-db = SQL("sqlite:///vocabulary.db")
-types = {"A1", "A2", "B1", "B2", "C1", "C2", "Placement"}
-levels = {"a1", "a2", "b1", "b2", "c1", "c2", "none"}
-
+db = SQL("sqlite:///users.db")
 
 @app.route("/admin")
 @admin_required
