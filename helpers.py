@@ -2,7 +2,7 @@ from cs50 import SQL
 from flask import redirect, session
 from functools import wraps
 
-db = SQL("sqlite:///vocabulary.db")
+db = SQL("sqlite:///users.db")
 
 levels = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2']
 
