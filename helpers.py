@@ -4,8 +4,6 @@ from functools import wraps
 
 db = SQL("sqlite:///users.db")
 
-levels = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2']
-
 def login_required(f):
     def decorated_function(*args, **kwargs):
         if session.get("user_id") is None:
