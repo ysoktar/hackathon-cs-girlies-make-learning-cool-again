@@ -3,7 +3,7 @@ from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import login_required, admin_required, get_questions, is_admin
+from helpers import login_required, admin_required, is_admin
 
 max_question_number = 30
 
