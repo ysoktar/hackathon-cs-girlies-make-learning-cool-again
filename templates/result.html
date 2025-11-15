@@ -1,19 +1,23 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Upload Syllabus
+    Summary Result
 {% endblock %}
 
 {% block main %}
 
-    <h1 class="text-center">Upload Syllabus</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data" class="mx-auto" style="max-width: 400px;">
-        
-        <div class="mb-2">
-            <input type="file" class="form-control" id="syllabus" name="file" style="width: 100%;" required>
+    <h1 class="text-center mb-4">Summary Result</h1>
+    
+    <div class="card mx-auto" style="max-width: 800px;">
+        <div class="card-body">
+            <h5 class="card-title">AI-Generated Summary</h5>
+            <div class="card-text text-start" style="white-space: pre-wrap;">{{ summary }}</div>
         </div>
-
-        <button class="btn btn-success mx-auto d-block" type="submit">Upload</button>
-    </form>
+    </div>
+    
+    <div class="mt-4">
+        <a href="/upload" class="btn btn-primary">Upload Another File</a>
+        <a href="/" class="btn btn-secondary">Go Home</a>
+    </div>
 
 {% endblock %}

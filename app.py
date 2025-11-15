@@ -4,7 +4,7 @@ from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import login_required, allowed_file, ai, db, UPLOAD_FOLDER
+from helpers import login_required, allowed_file, ai_summarize_file, db, UPLOAD_FOLDER
 
 max_question_number = 30
 
@@ -21,6 +21,27 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 
 Session(app)
 
+
+@app.route("/result", methods=["GET"])
+@login_required
+def result():
+    # Retrieve the latest uploaded file for the user
+    username = session.get("username")
+    user_files = os.listdir(app.config['UPLOAD_FOLDER'])
+    user_file = None
+    for file in user_files:
+        if file.startswith(username + "_"):
+            user_file = os.path.join(app.config['UPLOAD_FOLDER'], file)
+            break
+
+    if user_file is None:
+        flash("No uploaded file found for the user.", "danger")
+        return redirect("/upload")
+
+    # Call the ai function from helpers to process the file
+    summary = ai_summarize_file(user_file)
+
+    return render_template("result.html", summary=summary)
 
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
@@ -39,11 +60,11 @@ def upload():
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+            filename = f"{session.get('username')}_{filename}"
             dest = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(dest)
             flash("File uploaded successfully", "success")
-            response = ai(file)
-            return redirect("/upload")
+            return redirect("/result")
         else:
             flash("File type not allowed", "danger")
             return redirect(request.url)
