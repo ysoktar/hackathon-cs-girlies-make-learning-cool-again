@@ -86,6 +86,7 @@ def ai_summarize_file(filepath):
         
         summary = response.text
         print("[4/4] Summary received.")
+        os.remove(filepath)
         return summary
 
     except APIError as e:
