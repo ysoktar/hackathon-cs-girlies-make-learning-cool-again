@@ -1,0 +1,130 @@
+# Node / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnp.*
+.pnpm-store/
+.cache/
+dist/
+build/
+out/
+.next/
+.history/
+.vite/
+.vite-deps/
+.esbuild/
+public/build/
+package-lock.json-shrinkwrap
+# If you intentionally commit lockfiles, remove the above line
+
+# Environment / secrets
+.env
+.env.*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.envrc
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*~
+
+# IDEs / Editors
+.vscode/
+.history/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+*.iml
+
+# JetBrains
+*.iws
+*.ipr
+.idea/
+
+# Python (if used)
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+venv/
+env/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Test coverage and reports
+coverage/
+coverage.* 
+lcov-report/
+reports/
+
+# Build artifacts / caches
+.cache/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+
+# Vercel / Netlify / Now / other hosting caches
+.vercel/
+.now/
+.netlify/
+
+# Static site generators / frameworks
+public/.cache/
+.cache/
+.svelte-kit/
+.storybook/
+
+# Typescript
+*.tsbuildinfo
+
+# Misc
+*.bak
+*.orig
+.repl_history
+*.seed
+.vagrant/
+
+# Certificates / local keys
+*.crt
+*.csr
+*.key
+*.pfx
+
+# Optional: uncomment to ignore lockfiles (not recommended for apps)
+# yarn.lock
+# package-lock.json
+# pnpm-lock.yaml
