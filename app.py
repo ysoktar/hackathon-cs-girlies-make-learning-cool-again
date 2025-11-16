@@ -1,12 +1,15 @@
 import os
 from werkzeug.utils import secure_filename
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, g
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import login_required, allowed_file, ai_summarize_file, db, UPLOAD_FOLDER
+from helpers import login_required, allowed_file, ai_summarize_file, UPLOAD_FOLDER, get_db, query_db, execute_db, init_db
 
 max_question_number = 30
+
+# Initialize database if it doesn't exist
+init_db()
 
 app = Flask(__name__)
 
@@ -20,6 +23,12 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
 Session(app)
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 
 @app.route("/result", methods=["GET"])
@@ -89,14 +98,15 @@ def login():
             flash("must provide password", "danger")
             return redirect("/login")
 
-        user = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        users = query_db("SELECT * FROM users WHERE username = ?", [request.form.get("username")])
 
-        if len(user) != 1 or not check_password_hash(user[0]["hash"], request.form.get("password")):
+        if len(users) != 1 or not check_password_hash(dict(users[0])["hash"], request.form.get("password")):
             flash("Invalid username and/or password", "danger")
             return redirect("/login")
 
-        session["user_id"] = user[0]["id"]
-        session["username"] = user[0]["username"]
+        user = dict(users[0])
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
 
         return redirect("/")
     else:
@@ -123,22 +133,23 @@ def register():
             flash("must provide password confirmation", "danger")
             return redirect("/register")
 
-        user = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        users = query_db("SELECT * FROM users WHERE username = ?", [request.form.get("username")])
 
         if request.form.get("password") != request.form.get("confirmation"):
             flash("password and confirmation must be same", "danger")
             return redirect("/register")
 
-        if user:
+        if users:
             flash("username taken", "danger")
             return redirect("/register")
 
         hash = generate_password_hash(request.form.get("password"))
-        user = db.execute('INSERT INTO users (username, hash) VALUES(?, ?)', request.form.get("username"), hash)
+        execute_db('INSERT INTO users (username, hash) VALUES(?, ?)', [request.form.get("username"), hash])
 
-        user = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
-        session["user_id"] = user[0]["id"]
-        session["username"] = user[0]["username"]
+        users = query_db("SELECT * FROM users WHERE username = ?", [request.form.get("username")])
+        user = dict(users[0])
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
 
         return redirect("/")
     else:
