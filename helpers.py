@@ -102,7 +102,7 @@ def ai_analyze_file(filepath):
             print("[3/3] Requesting analysis from gemini-2.5-flash...")
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=["Give me a concise summary of this syllabus:\n\n" + text_content],
+                contents=["Give me a concise summary of this syllabus (start immediately with the summary, no preamble):\n\n" + text_content],
                 config=config
             )
             summary = response.text
@@ -117,7 +117,7 @@ def ai_analyze_file(filepath):
             print("[3/4] Requesting analysis from gemini-2.5-flash...")
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=["Give me a concise summary of this syllabus.", uploaded_file],
+                contents=["Give me a concise summary of this syllabus (start immediately with the summary, no preamble).", uploaded_file],
                 config=config
             )
             
@@ -203,9 +203,11 @@ def ai_generate_resources(filepath):
             - Course resources (with authors)
             - Course instructors
             - Recommended supplementary resources (books, articles, videos, websites with URLs)
+            (i.e.: youtube playlists, online courses, etc. also find some not mentioned in the syllabus)
             
             Format your response as a markdown list using bullet points (-).
             Include links in markdown format: [Title](URL) when URLs are available.
+            (start immediately with the markdown list, no preamble)
         """
 
         # Handle DOCX files by extracting text
