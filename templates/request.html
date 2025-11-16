@@ -7,7 +7,7 @@
 {% block main %}
 
     <h1 class="text-center">Upload Syllabus</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data" class="mx-auto" style="max-width: 400px;">
+    <form action="/upload" method="post" enctype="multipart/form-data" class="mx-auto" style="max-width: 400px;" onsubmit="showLoadingSpinner()">
         
         <div class="mb-2">
             <input type="file" class="form-control" id="syllabus" name="file" style="width: 100%;" required>
