@@ -130,4 +130,3 @@ public/.cache/
 # pnpm-lock.yaml
 /flask_session
 *.db
-/uploads
