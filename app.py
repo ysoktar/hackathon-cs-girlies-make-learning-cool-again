@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 import markdown
 from werkzeug.utils import secure_filename
 from flask import Flask, flash, redirect, render_template, request, session, g
@@ -7,7 +6,6 @@ from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from markupsafe import Markup
 
-from helpers import login_required, allowed_file, ai_summarize_file, db, UPLOAD_FOLDER, add_syllabus, get_user_syllabuses
 from helpers import login_required, allowed_file, ai_analyze_file, ai_validate_syllabus, ai_generate_resources, UPLOAD_FOLDER, get_db, query_db, execute_db, init_db
 
 # Initialize database if it doesn't exist
@@ -102,14 +100,6 @@ def upload():
             return redirect(request.url)
     
     return render_template("request.html")
-
-@app.route("/classes")
-@login_required
-def classes():
-    """Display the user's uploaded syllabuses dashboard"""
-    user_id = session.get('user_id')
-    user_syllabuses = get_user_syllabuses(user_id)
-    return render_template("classes.html", syllabuses=user_syllabuses)
 
 @app.route("/")
 def index():
