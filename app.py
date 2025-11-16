@@ -1,54 +1,75 @@
 import os
 from datetime import datetime
+import markdown
 from werkzeug.utils import secure_filename
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, g
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
+from markupsafe import Markup
 
 from helpers import login_required, allowed_file, ai_summarize_file, db, UPLOAD_FOLDER, add_syllabus, get_user_syllabuses
+from helpers import login_required, allowed_file, ai_analyze_file, ai_validate_syllabus, ai_generate_resources, UPLOAD_FOLDER, get_db, query_db, execute_db, init_db
 
-max_question_number = 30
+# Initialize database if it doesn't exist
+init_db()
 
 app = Flask(__name__)
 
+# Add markdown filter for Jinja templates
+@app.template_filter('markdown')
+def markdown_filter(text):
+    return Markup(markdown.markdown(text, extensions=[
+        'fenced_code',
+        'tables',
+        'nl2br',
+        'sane_lists',
+        'pymdownx.magiclink'
+    ]))
+
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-# configure upload folder
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# ensure upload folder exists (helpers already creates it, but keep safe)
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 Session(app)
 
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
-@app.route("/result", methods=["GET"])
+@app.route("/result")
 @login_required
 def result():
-    # Retrieve the latest uploaded file for the user
     username = session.get("username")
     user_files = os.listdir(app.config['UPLOAD_FOLDER'])
     user_file = None
+    
     for file in user_files:
-        if file.startswith(username + "_"):
+        if file.startswith(f"{username}_"):
             user_file = os.path.join(app.config['UPLOAD_FOLDER'], file)
             break
 
-    if user_file is None:
-        flash("No uploaded file found for the user.", "danger")
+    if not user_file:
+        flash("No uploaded file found.", "danger")
         return redirect("/upload")
 
-    # Call the ai function from helpers to process the file
-    summary = ai_summarize_file(user_file)
-
-    return render_template("result.html", summary=summary)
+    summary = ai_analyze_file(user_file)
+    resources = ai_generate_resources(user_file)
+    
+    # Clean up the file after both operations complete
+    try:
+        if os.path.exists(user_file):
+            os.remove(user_file)
+    except:
+        pass
+    
+    return render_template("result.html", summary=summary, resources=resources)
 
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
     if request.method == "POST":
-        # check file part
         if 'file' not in request.files:
             flash("No file part", "danger")
             return redirect(request.url)
@@ -60,27 +81,27 @@ def upload():
             return redirect(request.url)
 
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filename = f"{session.get('username')}_{filename}"
-            dest = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(dest)
+            filename = f"{session.get('username')}_{secure_filename(file.filename)}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
             
-            # Record the uploaded syllabus in the dictionary
-            add_syllabus(
-                user_id=session.get('user_id'),
-                filename=filename,
-                original_name=file.filename,
-                upload_time=datetime.now()
-            )
+            # Validate if file is a syllabus
+            is_valid, message = ai_validate_syllabus(filepath)
+            print(f"Syllabus validation: {is_valid}, {message}")
+            if not is_valid:
+                # Delete the invalid file
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                flash(f"Invalid file: {message}. Please upload a course syllabus.", "danger")
+                return redirect("/upload")
             
             flash("File uploaded successfully", "success")
             return redirect("/result")
         else:
             flash("File type not allowed", "danger")
             return redirect(request.url)
-    else:
-        return render_template("request.html")
-
+    
+    return render_template("request.html")
 
 @app.route("/classes")
 @login_required
@@ -94,74 +115,77 @@ def classes():
 def index():
     return render_template("index.html")
 
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     session.clear()
 
     if request.method == "POST":
-        if not request.form.get("username"):
-            flash("must provide username", "danger")
+        username = request.form.get("username")
+        password = request.form.get("password")
+        
+        if not username:
+            flash("Must provide username", "danger")
             return redirect("/login")
-        elif not request.form.get("password"):
-            flash("must provide password", "danger")
+        if not password:
+            flash("Must provide password", "danger")
             return redirect("/login")
 
-        user = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        users = query_db("SELECT * FROM users WHERE username = ?", [username])
 
-        if len(user) != 1 or not check_password_hash(user[0]["hash"], request.form.get("password")):
+        if len(users) != 1 or not check_password_hash(dict(users[0])["hash"], password):
             flash("Invalid username and/or password", "danger")
             return redirect("/login")
 
-        session["user_id"] = user[0]["id"]
-        session["username"] = user[0]["username"]
+        user = dict(users[0])
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
 
         return redirect("/")
-    else:
-        return render_template("login.html")
-
+    
+    return render_template("login.html")
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    """Register user"""
     if request.method == "POST":
-        if not request.form.get("username"):
-            flash("must provide username", "danger")
+        username = request.form.get("username")
+        password = request.form.get("password")
+        confirmation = request.form.get("confirmation")
+        
+        if not username:
+            flash("Must provide username", "danger")
             return redirect("/register")
-        elif not request.form.get("password"):
-            flash("must provide password", "danger")
+        if not password:
+            flash("Must provide password", "danger")
             return redirect("/register")
-        elif not request.form.get("confirmation"):
-            flash("must provide password confirmation", "danger")
+        if not confirmation:
+            flash("Must provide password confirmation", "danger")
             return redirect("/register")
-
-        user = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
-
-        if request.form.get("password") != request.form.get("confirmation"):
-            flash("password and confirmation must be same", "danger")
-            return redirect("/register")
-
-        if user:
-            flash("username taken", "danger")
+        if password != confirmation:
+            flash("Passwords must match", "danger")
             return redirect("/register")
 
-        hash = generate_password_hash(request.form.get("password"))
-        user = db.execute('INSERT INTO users (username, hash) VALUES(?, ?)', request.form.get("username"), hash)
+        users = query_db("SELECT * FROM users WHERE username = ?", [username])
 
-        user = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
-        session["user_id"] = user[0]["id"]
-        session["username"] = user[0]["username"]
+        if users:
+            flash("Username already taken", "danger")
+            return redirect("/register")
+
+        hash_pwd = generate_password_hash(password)
+        execute_db('INSERT INTO users (username, hash) VALUES(?, ?)', [username, hash_pwd])
+        
+        users = query_db("SELECT * FROM users WHERE username = ?", [username])
+        user = dict(users[0])
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
 
         return redirect("/")
-    else:
-        return render_template("register.html")
-
+    
+    return render_template("register.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
