@@ -9,8 +9,10 @@ CREATE TABLE results (
   user_id INTEGER NOT NULL,
   name TEXT,
   summary TEXT,
-  info TEXT,
   resources TEXT,
   ics BLOB,
+  semester_start_date DATE,
+  semester_end_date DATE,
+  current_date DATE,
   FOREIGN KEY (user_id) REFERENCES users (id)
 );

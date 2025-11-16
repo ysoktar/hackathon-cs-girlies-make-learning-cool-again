@@ -7,10 +7,31 @@
 {% block main %}
 
     <h1 class="text-center">Upload Syllabus</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data" class="mx-auto" style="max-width: 400px;" onsubmit="showLoadingSpinner()">
+    <form action="/upload" method="post" enctype="multipart/form-data" class="mx-auto" style="max-width: 500px;">
         
-        <div class="mb-2">
-            <input type="file" class="form-control" id="syllabus" name="file" style="width: 100%;" required>
+        <div class="mb-3">
+            <label for="course_name" class="form-label">Course Name</label>
+            <input type="text" class="form-control" id="course_name" name="course_name" placeholder="e.g., CS101 - Introduction to Computer Science">
+            <small class="form-text text-muted">Optional: Give your course a custom name</small>
+        </div>
+
+        <div class="mb-3">
+            <label for="syllabus" class="form-label">Syllabus File</label>
+            <input type="file" class="form-control" id="syllabus" name="file" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="semester_start" class="form-label">Semester Start Date</label>
+            <input type="date" class="form-control" id="semester_start" name="semester_start_date" 
+                   {% if default_start %}value="{{ default_start }}"{% endif %}>
+            <small class="form-text text-muted">Optional: When does this semester begin?{% if default_start %} (Defaults to your last upload){% endif %}</small>
+        </div>
+
+        <div class="mb-3">
+            <label for="semester_end" class="form-label">Semester End Date</label>
+            <input type="date" class="form-control" id="semester_end" name="semester_end_date"
+                   {% if default_end %}value="{{ default_end }}"{% endif %}>
+            <small class="form-text text-muted">Optional: When does this semester end?{% if default_end %} (Defaults to your last upload){% endif %}</small>
         </div>
 
         <button class="btn btn-success mx-auto d-block" type="submit">Upload</button>
