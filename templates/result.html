@@ -1,23 +1,67 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Summary Result
+    Result
 {% endblock %}
 
 {% block main %}
+    {% if course_name %}
+    <h1>{{ course_name }}</h1>
+    {% else %}
+    <h1>Syllabus Analysis Results</h1>
+    {% endif %}
 
-    <h1 class="text-center mb-4">Summary Result</h1>
-    
-    <div class="card mx-auto" style="max-width: 800px;">
-        <div class="card-body">
-            <h5 class="card-title">AI-Generated Summary</h5>
-            <div class="card-text text-start" style="white-space: pre-wrap;">{{ summary }}</div>
+    <div class="text-start mx-auto" style="max-width: 800px;">
+        <h2 class="mt-4">Summary</h2>
+        <div class="card">
+            <div class="card-body">
+                {{ summary }}
+            </div>
         </div>
+
+        <h2 class="mt-4">Resources</h2>
+        <div class="card">
+            <div class="card-body">
+                {{ resources | markdown }}
+            </div>
+        </div>
+
+        {% if semester_start or semester_end %}
+        <h2 class="mt-4">Semester Information</h2>
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    {% if semester_start %}
+                    <div class="col-md-6">
+                        <p><strong><i class="bi bi-calendar-check"></i> Start Date:</strong></p>
+                        <p class="text-muted">{{ semester_start }}</p>
+                    </div>
+                    {% endif %}
+                    {% if semester_end %}
+                    <div class="col-md-6">
+                        <p><strong><i class="bi bi-calendar-x"></i> End Date:</strong></p>
+                        <p class="text-muted">{{ semester_end }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if has_ics and result_id %}
+                <div class="mt-3">
+                    <a href="/download/ics/{{ result_id }}" class="btn btn-success">
+                        <i class="bi bi-download"></i> Download Calendar (.ics)
+                    </a>
+                    <small class="text-muted d-block mt-2">
+                        Import this file into your calendar app (Google Calendar, Outlook, Apple Calendar, etc.)
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
-    
+
     <div class="mt-4">
-        <a href="/upload" class="btn btn-primary">Upload Another File</a>
-        <a href="/" class="btn btn-secondary">Go Home</a>
+        <a href="/upload" class="btn btn-primary">Upload Another Syllabus</a>
+        <a href="/classes" class="btn btn-secondary">View My Classes</a>
     </div>
 
 {% endblock %}

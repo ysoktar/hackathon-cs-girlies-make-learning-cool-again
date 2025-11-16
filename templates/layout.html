@@ -29,6 +29,18 @@
 
 <body>
 
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h3 class="mt-4">Processing Your Syllabus</h3>
+            <p class="text-muted">Analyzing content and generating resources...</p>
+            <p class="text-muted"><small>This may take up to 30 seconds</small></p>
+        </div>
+    </div>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     <div class="container">
@@ -119,6 +131,15 @@
 
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
 
+        // Loading screen functions
+        function showLoading() {
+            document.getElementById('loading-screen').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-screen').style.display = 'none';
+        }
+
         window.onload = function () {
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
@@ -135,6 +156,20 @@
                     alert.style.display = 'none';
                 });
             }, 10000);
+
+            // Hide loading screen on page load
+            hideLoading();
+
+            // Add loading screen to forms
+            const uploadForm = document.querySelector('form[enctype="multipart/form-data"]');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', function(e) {
+                    const fileInput = this.querySelector('input[type="file"]');
+                    if (fileInput && fileInput.files.length > 0) {
+                        showLoading();
+                    }
+                });
+            }
         };
 
     </script>
