@@ -1,4 +1,4 @@
-Syllabus Bender:
+# Syllabus Bender:
   A project for students/users to store their syllabusses of their classes of the cemester and summarize the lecture content with the help of AI, and get help scheduling the studying plan for their clases, etc.
 
 
@@ -6,18 +6,18 @@ Syllabus Bender:
 
 
 How to run:
-*select branch main
-*download the repository
-*(Assuming you have ptyhon installed) install the rqeuirements.txt content with pip:
+## select branch main
+## download the repository
+## (Assuming you have ptyhon installed) install the rqeuirements.txt content with pip:
   pip install -r ./requirements.txt
-*Open a new terminal page in the downloaded folder
-*define an environment variable for API key:
+## Open a new terminal page in the downloaded folder
+## define an environment variable for API key:
   $env:GEMINI_API_KEY='AIzaSyAelduUiVY_8cGfcVUL4RX5Yhr0o2wk9rQ' (you can use your own API key too, get it from google ai studio)
-*execute the project with command:
+## execute the project with command:
   flask run
-*ctrl+click the website link
-*you have to register to use the services.
-*ENJOY OUR PROJECT!!!!
+## ctrl+click the website link
+## you have to register to use the services.
+# ENJOY OUR PROJECT!!!!
 
 
 
